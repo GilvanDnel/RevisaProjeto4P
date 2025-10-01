@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Manual de Bolso: Revisão de Gestão de Projetos</title>
+    <!-- Carregamento do Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Configuração do Tailwind para usar a fonte Inter -->
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ["Inter", "sans-serif"],
+            },
+            colors: {
+              "primary-blue": "#1e40af", // Blue 700
+              "secondary-green": "#059669", // Emerald 600
+              "error-red": "#dc2626", // Red 600
+              "light-bg": "#f3f4f6", // Gray 100
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      /* Estilos customizados para aparência e usabilidade */
+      body {
+        font-family: "Inter", sans-serif;
+        background-color: #f3f4f6; /* light-bg */
+      }
+      .container-questao {
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+          0 2px 4px -2px rgba(0, 0, 0, 0.06);
+        transition: transform 0.3s ease-in-out;
+      }
+      /* Estilo para a caixa de mensagem personalizada (modal) */
+      #feedback-modal {
+        background-color: rgba(0, 0, 0, 0.7);
+        z-index: 1000;
+      }
+      .correct {
+        border-left: 6px solid #059669; /* secondary-green */
+        background-color: #d1fae5; /* Green 100 */
+      }
+      .incorrect {
+        border-left: 6px solid #dc2626; /* error-red */
+        background-color: #fee2e2; /* Red 100 */
+      }
+      /* Efeito de hover nos botões */
+      .option-button {
+        transition: all 0.2s ease;
+        text-align: justify; /* Justifica o texto das opções */
+      }
+      .option-button:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 10px rgba(30, 64, 175, 0.3); /* Sombra mais destacada ao passar o mouse */
+      }
+      .option-button:disabled {
+        cursor: default;
+        opacity: 0.9;
+      }
+      /* Justifica o texto do resumo para melhor leitura */
+      .summary-text {
+        text-align: justify;
+      }
+
+      /* Alinhamento da Pergunta */
+      .question-text {
+        text-align: justify;
+      }
+    </style>
+  </head>
+  <body class="min-h-screen flex flex-col">
+    <!-- Header com Placar -->
+    <header class="bg-primary-blue shadow-lg p-4 sticky top-0 z-50">
+      <div
+        class="max-w-4xl mx-auto flex flex-col sm:flex-row justify-between items-center text-white"
+      >
+        <h1 class="text-xl sm:text-2xl font-bold tracking-tight mb-2 sm:mb-0">
+          Guia Rápido PMBOK
+        </h1>
+        <div
+          id="score-display"
+          class="bg-white text-primary-blue px-3 py-1 rounded-full font-semibold shadow-md"
+        >
+          Acertos: 0 / 21
+        </div>
+      </div>
+    </header>
+
+    <!-- Conteúdo Principal - Contêiner de Questões -->
+    <main
+      id="quiz-container"
+      class="max-w-4xl mx-auto p-4 flex-grow space-y-8 py-8"
+    ></main>
+
+    <!-- Modal de Feedback Personalizado -->
+    <div
+      id="feedback-modal"
+      class="fixed inset-0 hidden items-center justify-center"
+    >
+      <div
+        class="bg-white p-6 rounded-xl shadow-2xl max-w-xs sm:max-w-sm mx-4 transform transition-all duration-300 scale-100 border-t-8 border-error-red"
+      >
+        <h3
+          id="modal-title"
+          class="text-2xl font-bold mb-3 text-error-red"
+        ></h3>
+        <p id="modal-message" class="text-gray-700 mb-5 text-justify"></p>
+        <div class="flex justify-end">
+          <button
+            onclick="closeModal()"
+            class="px-5 py-2 bg-error-red text-white font-semibold rounded-lg hover:bg-red-700 transition duration-200 shadow-md"
+          >
+            Tentar Novamente
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white p-4 mt-8">
+      <div class="max-w-4xl mx-auto text-center text-sm">
+        <p>Conteúdo baseado na Revisão de Gestão de Projetos.</p>
+        <p class="mt-1">Desenvolvido por: **GILVAN DANIEL DA SILVA**</p>
+      </div>
+    </footer>
+
+    <!-- Script JavaScript -->
+    <script>
+      // Array com as 21 questões, seus resumos, opções e respostas.
+      const questions = [
+        {
+          id: 1,
+          summary:
+            "Gestão de Projetos: Disciplina estratégica que combina planejamento, execução e controle para atingir objetivos. Transforma ideias em realidade, otimizando o uso de recursos.",
+          question:
+            "Segundo o material, o que a gestão de projetos permite às organizações?",
+          options: {
+            A: "Apenas gerir orçamentos de projetos.",
+            B: "Transformar ideias em realidade e usar recursos eficientemente.",
+            C: "Contratar novos funcionários.",
+            D: "Focar apenas em tarefas operacionais.",
+          },
+          answer: "B",
+          isAnsweredCorrectly: false,
+        },
+        {
+          id: 2,
+          summary:
+            "Gestão vs. Gerenciamento: **Gestão** foca na visão estratégica, liderança e tomada de decisões. **Gerenciamento** foca na aplicação técnica e operacional de ferramentas e processos.",
+          question:
+            "Qual a principal diferença entre gestão de projetos e gerenciamento de projetos, conforme o documento?",
+          options: {
+            A: "Gerenciamento é mais estratégico, enquanto a gestão é mais técnica.",
+            B: "Gerenciamento foca na execução técnica e operacional, enquanto a gestão se concentra na visão macro e liderança.",
+            C: "Ambos são exatamente a mesma coisa.",
+            D: "A gestão é apenas para projetos pequenos.",
+          },
+          answer: "B",
+          isAnsweredCorrectly: false,
+        },
+        {
+          id: 3,
+          summary:
+            "O Que Define Um Projeto: Um projeto é um empreendimento **temporário** (início e fim definidos). É **Único** (cria algo novo) e **Progressivo** (desenvolve-se em etapas).",
+          question:
+            "Quais são as três características principais de um projeto, de acordo com o documento?",
+          options: {
+            A: "Estratégico, único e caro.",
+            B: "Temporário, único e progressivo.",
+            C: "Longo, complexo e contínuo.",
+            D: "Repetitivo, operacional e simples.",
+          },
+          answer: "B",
+          isAnsweredCorrectly: false,
+        },
+        {
+          id: 4,
+          summary:
+            "Tipos de Projetos em TI: **Projetos de Software** focam na criação de soluções digitais. Representam o 'coração da inovação tecnológica', desenvolvendo novas aplicações e melhorias.",
+          question:
+            "Qual tipo de projeto de TI é descrito como o 'coração da inovação tecnológica' e foca na criação de soluções digitais?",
+          options: {
+            A: "Projetos de Serviço",
+            B: "Projetos de Consultoria de TI",
+            C: "Projetos de Software",
+            D: "Projetos de Infraestrutura",
+          },
+          answer: "C",
+          isAnsweredCorrectly: false,
+        },
+        {
+          id: 5,
+          summary:
+            "Projetos de Serviço: Garantem o funcionamento contínuo dos sistemas. Incluem **Manutenção de Infraestruturas**, **Suporte Técnico** e **Implementação de Tecnologias**.",
+          question:
+            "Que tipo de projeto de TI inclui a manutenção de servidores e redes, bem como o suporte técnico para usuários?",
+          options: {
+            A: "Projetos de Consultoria",
+            B: "Projetos de Software",
+            C: "Projetos de Marketing",
+            D: "Projetos de Serviço",
+          },
+          answer: "D",
+          isAnsweredCorrectly: false,
+        },
+        {
+          id: 6,
+          summary:
+            "Projetos de Consultoria de TI: Atuam como a **ponte estratégica** entre as necessidades do negócio e as soluções tecnológicas, envolvendo análise de necessidades e recomendação de soluções.",
+          question:
+            "Segundo o documento, qual é o principal papel dos projetos de consultoria de TI?",
+          options: {
+            A: "Apenas vender software.",
+            B: "Servir como ponte estratégica entre as necessidades do negócio e as soluções tecnológicas.",
+            C: "Realizar a manutenção de infraestruturas.",
+            D: "Desenvolver novas aplicações de software.",
+          },
+          answer: "B",
+          isAnsweredCorrectly: false,
+        },
+        {
+          id: 7,
+          summary:
+            "O Gerente de Projetos: É o **'orquestrador principal'** e **'arquiteto do sucesso projectual'** de todo o ciclo de vida, responsável pela concepção até a entrega.",
+          question:
+            "Qual termo é usado para descrever a função do gerente de projetos no material?",
+          options: {
+            A: "O arquiteto do sucesso projectual",
+            B: "O especialista em codificação",
+            C: "O analista de dados",
+            D: "O responsável pela contabilidade",
+          },
+          answer: "A",
+          isAnsweredCorrectly: false,
+        },
+        {
+          id: 8,
+          summary:
+            "Responsabilidades do Gerente: Incluem **Definição de Escopo**, **Liderança**, **Comunicação**, **Gestão de Prazos**, **Alocação de Recursos** e **Controlo de Riscos**.",
+          question:
+            "Qual alternativa apresenta três responsabilidades-chave do gerente de projetos?",
+          options: {
+            A: "Apenas planejar férias, contratar pessoal e fazer marketing.",
+            B: "Definição de Escopo, Liderança e Controlo de Riscos.",
+            C: "Contratação de pessoal, vendas e contabilidade.",
+            D: "Marketing, vendas e logística.",
+          },
+          answer: "B",
+          isAnsweredCorrectly: false,
+        },
+        {
+          id: 9,
+          summary:
+            "Competências Essenciais: Divididas em **Técnicas** (metodologias, gestão orçamental) e **Comportamentais** (Liderança, Comunicação eficaz, Resolução de Conflitos).",
+          question:
+            "Quais são as duas categorias de competências essenciais para um gerente de projetos, de acordo com o texto?",
+          options: {
+            A: "Criativas e operacionais.",
+            B: "Técnicas e comportamentais.",
+            C: "Financeiras e de vendas.",
+            D: "Administrativas e de marketing.",
+          },
+          answer: "B",
+          isAnsweredCorrectly: false,
+        },
+        {
+          id: 10,
+          summary:
+            "Programa vs. Projeto: Projeto é único e temporário. **Programa** é um grupo de projetos relacionados, geridos de forma coordenada para obter **benefícios estratégicos**.",
+          question: "O que é um 'programa' em gestão, segundo o documento?",
+          options: {
+            A: "Um único projeto muito grande.",
+            B: "Um grupo de projetos não relacionados.",
+            C: "Um grupo de projetos relacionados, geridos de forma coordenada para obter benefícios estratégicos.",
+            D: "Uma linha de produção contínua.",
+          },
+          answer: "C",
+          isAnsweredCorrectly: false,
+        },
+        {
+          id: 11,
+          summary:
+            "Benefícios da Gestão por Programas: **Sinergia Organizacional** (maior eficiência global), **Otimização de Recursos** e **Alinhamento Estratégico** com objetivos de longo prazo.",
+          question:
+            "Qual é um benefício chave da gestão por programas, conforme o documento?",
+          options: {
+            A: "Aumento do desperdício de recursos.",
+            B: "Maior eficiência global através da Sinergia Organizacional.",
+            C: "Atraso inevitável de projetos.",
+            D: "Foco em objetivos de curto prazo.",
+          },
+          answer: "B",
+          isAnsweredCorrectly: false,
+        },
+        {
+          id: 12,
+          summary:
+            "Introdução ao PMBOK: O Project Management Body of Knowledge é o **guia fundamental** que estabelece as melhores práticas globalmente. É um framework **flexível**, não rígido.",
+          question: "O que é o PMBOK?",
+          options: {
+            A: "Uma metodologia de projeto rígida.",
+            B: "Um software de gestão de projetos.",
+            C: "Um guia fundamental de melhores práticas em gestão de projetos.",
+            D: "Um livro de finanças.",
+          },
+          answer: "C",
+          isAnsweredCorrectly: false,
+        },
+        {
+          id: 13,
+          summary:
+            "Grupos de Processos do PMBOK: São cinco fases interativas e sobrepostas, essenciais para o ciclo de vida do projeto.",
+          question: "Quais são os cinco grupos de processos do PMBOK?",
+          options: {
+            A: "Análise, Design, Desenvolvimento, Teste, Lançamento.",
+            B: "Iniciação, Planejamento, Execução, Monitoramento e Encerramento.",
+            C: "Estratégia, Tática, Operação, Controle, Revisão.",
+            D: "Ideia, Orçamento, Equipe, Cronograma, Feedback.",
+          },
+          answer: "B",
+          isAnsweredCorrectly: false,
+        },
+        {
+          id: 14,
+          summary:
+            "Fase 1: Iniciação: Define e autoriza o projeto. O sucesso desta fase estabelece a base para o projeto. Um dos entregáveis principais é o TAP.",
+          question: "Qual é o principal entregável da fase de Iniciação?",
+          options: {
+            A: "O produto final.",
+            B: "O Termo de Abertura do Projeto (TAP).",
+            C: "O relatório de encerramento.",
+            D: "O cronograma detalhado.",
+          },
+          answer: "B",
+          isAnsweredCorrectly: false,
+        },
+        {
+          id: 15,
+          summary:
+            "Fase 2: Planejamento: Estabelece o **escopo total** e define como o projeto será realizado, criando a **linha de base** para medição do desempenho e controle.",
+          question: "Durante a fase de Planejamento, o que é estabelecido?",
+          options: {
+            A: "Apenas o orçamento.",
+            B: "Apenas o encerramento do projeto.",
+            C: "O escopo total e a linha de base para a medição do desempenho.",
+            D: "O lançamento do produto.",
+          },
+          answer: "C",
+          isAnsweredCorrectly: false,
+        },
+        {
+          id: 16,
+          summary:
+            "Fase 3: Execução: Consome a maior parte dos recursos. Onde o trabalho planejado é **realizado** e os recursos são **coordenados** para entregar os produtos ou serviços previstos.",
+          question: "O que acontece na fase de Execução?",
+          options: {
+            A: "O projeto é autorizado.",
+            B: "O produto é finalizado e entregue.",
+            C: "O trabalho planejado é realizado e os recursos são coordenados.",
+            D: "Apenas o orçamento é controlado.",
+          },
+          answer: "C",
+          isAnsweredCorrectly: false,
+        },
+        {
+          id: 17,
+          summary:
+            "Fase 4: Monitoramento e Controle: Ocorre em paralelo à execução. Mede o progresso para **identificar variações** em relação ao plano e permitir **ações corretivas**.",
+          question:
+            "Em qual fase são identificadas variações em relação ao plano, permitindo ações corretivas?",
+          options: {
+            A: "Iniciação.",
+            B: "Execução.",
+            C: "Monitoramento e Controle.",
+            D: "Encerramento.",
+          },
+          answer: "C",
+          isAnsweredCorrectly: false,
+        },
+        {
+          id: 18,
+          summary:
+            "Fase 5: Encerramento: Formaliza a **aceitação** do produto. Essencial para documentar **Lições Aprendidas** e **liberar recursos**.",
+          question: "Qual é o propósito da fase de Encerramento?",
+          options: {
+            A: "Iniciar um novo projeto.",
+            B: "Formalizar a aceitação do produto, documentar lições aprendidas e liberar recursos.",
+            C: "Apenas comemorar a conclusão.",
+            D: "Fazer o controle de custos.",
+          },
+          answer: "B",
+          isAnsweredCorrectly: false,
+        },
+        {
+          id: 19,
+          summary:
+            "Área de Conhecimento: **Gestão do Escopo**: Define e controla o que está incluído no projeto e o que não está, para garantir que apenas o trabalho necessário seja realizado.",
+          question:
+            "Que área de conhecimento do PMBOK define e controla o que está incluído no projeto?",
+          options: {
+            A: "Gestão de Cronograma.",
+            B: "Gestão de Custos.",
+            C: "Gestão do Escopo.",
+            D: "Gestão da Qualidade.",
+          },
+          answer: "C",
+          isAnsweredCorrectly: false,
+        },
+        {
+          id: 20,
+          summary:
+            "Área de Conhecimento: **Gestão dos Riscos**: Envolve identificação, análise e planejamento de respostas. É mais intensa no Planejamento, mas relevante em **todas as fases**.",
+          question:
+            "A gestão de riscos é uma área de conhecimento que é relevante em qual fase do projeto?",
+          options: {
+            A: "Apenas na fase de Iniciação.",
+            B: "Apenas na fase de Encerramento.",
+            C: "Em todas as fases, mas mais intensa no planejamento.",
+            D: "Apenas durante a execução.",
+          },
+          answer: "C",
+          isAnsweredCorrectly: false,
+        },
+        {
+          id: 21,
+          summary:
+            "Tendências Futuras: Para 2024, o destaque é a **Inteligência Artificial**, com **Automação de tarefas repetitivas** e **Análise Preditiva de Riscos**.",
+          question:
+            "O que o material sugere como uma tendência futura para a gestão de projetos em 2024?",
+          options: {
+            A: "Apenas o uso de metodologias tradicionais.",
+            B: "A integração de critérios ambientais e sociais.",
+            C: "Automação de tarefas e análise preditiva de riscos através da inteligência artificial.",
+            D: "Aumento de custos de projetos.",
+          },
+          answer: "C",
+          isAnsweredCorrectly: false,
+        },
+      ];
+
+      let correctCount = 0;
+      const totalQuestions = questions.length;
+      const quizContainer = document.getElementById("quiz-container");
+      const scoreDisplay = document.getElementById("score-display");
+      const modal = document.getElementById("feedback-modal");
+      const modalTitle = document.getElementById("modal-title");
+      const modalMessage = document.getElementById("modal-message");
+
+      // Função para atualizar o placar
+      function updateScore() {
+        scoreDisplay.textContent = `Acertos: ${correctCount} / ${totalQuestions}`;
+        if (correctCount === totalQuestions) {
+          modalTitle.textContent = "Parabéns!";
+          modalTitle.classList.remove("text-error-red");
+          modalTitle.classList.add("text-secondary-green");
+          modalMessage.textContent =
+            "Você acertou todas as 21 questões! Você domina a Revisão de Gestão de Projetos!";
+          modal.classList.remove("hidden");
+          modal.classList.add("flex");
+          document
+            .querySelector("#feedback-modal > div")
+            .classList.remove("border-error-red");
+          document
+            .querySelector("#feedback-modal > div")
+            .classList.add("border-secondary-green");
+          document
+            .querySelector("#feedback-modal button")
+            .classList.remove("bg-error-red", "hover:bg-red-700");
+          document
+            .querySelector("#feedback-modal button")
+            .classList.add("bg-secondary-green", "hover:bg-emerald-700");
+        }
+      }
+
+      // Função para fechar a modal de feedback
+      function closeModal() {
+        modal.classList.remove("flex");
+        modal.classList.add("hidden");
+      }
+
+      // Função principal para verificar a resposta
+      function checkAnswer(questionId, selectedOption) {
+        const question = questions.find((q) => q.id === questionId);
+        const questionElement = document.getElementById(
+          `question-${questionId}`
+        );
+        const optionsContainer = document.getElementById(
+          `options-${questionId}`
+        );
+
+        // Se a questão já foi respondida corretamente, ignora
+        if (question.isAnsweredCorrectly) return;
+
+        if (selectedOption === question.answer) {
+          // Resposta Correta
+          if (!question.isAnsweredCorrectly) {
+            question.isAnsweredCorrectly = true;
+            correctCount++;
+            updateScore();
+          }
+
+          questionElement.classList.remove(
+            "border-l-4",
+            "border-gray-300",
+            "incorrect"
+          );
+          questionElement.classList.add("correct");
+
+          // Desabilitar todos os botões e marcar o correto
+          Array.from(optionsContainer.children).forEach((button) => {
+            button.disabled = true;
+            if (button.value === selectedOption) {
+              button.classList.remove(
+                "bg-primary-blue",
+                "hover:bg-blue-600",
+                "shadow-md"
+              );
+              button.classList.add(
+                "bg-secondary-green",
+                "ring-2",
+                "ring-white"
+              );
+            }
+          });
+        } else {
+          // Resposta Incorreta
+          questionElement.classList.remove("border-l-4", "border-gray-300");
+          questionElement.classList.add("incorrect");
+
+          modalTitle.textContent = "Resposta Incorreta!";
+          modalTitle.classList.remove("text-secondary-green");
+          modalTitle.classList.add("text-error-red");
+          document
+            .querySelector("#feedback-modal > div")
+            .classList.remove("border-secondary-green");
+          document
+            .querySelector("#feedback-modal > div")
+            .classList.add("border-error-red");
+          document
+            .querySelector("#feedback-modal button")
+            .classList.remove("bg-secondary-green", "hover:bg-emerald-700");
+          document
+            .querySelector("#feedback-modal button")
+            .classList.add("bg-error-red", "hover:bg-red-700");
+
+          modalMessage.textContent = `A opção "${selectedOption}" está incorreta. Reveja o resumo à esquerda e tente responder a questão novamente. Você consegue!`;
+
+          // Mostra a modal
+          modal.classList.remove("hidden");
+          modal.classList.add("flex");
+        }
+      }
+
+      // Função para renderizar as questões na página
+      function renderQuestions() {
+        questions.forEach((q) => {
+          const questionHtml = `
+                    <div id="question-${
+                      q.id
+                    }" class="container-questao bg-white p-6 rounded-xl border-l-4 border-gray-300 transition duration-300">
+                        <h2 class="text-xl font-extrabold text-primary-blue mb-4">Questão ${
+                          q.id
+                        } de ${totalQuestions}</h2>
+                        
+                        <div class="flex flex-col md:flex-row gap-6">
+                            
+                            <!-- Lado Esquerdo: Resumo (Ocupa largura total em mobile, 1/3 em desktop) -->
+                            <div class="md:w-1/3 p-4 bg-light-bg rounded-lg">
+                                <h3 class="font-bold text-gray-700 mb-2 border-b border-gray-300 pb-1">Resumo do Tema</h3>
+                                <p class="text-sm text-gray-600 leading-relaxed summary-text">${
+                                  q.summary
+                                }</p>
+                            </div>
+                            
+                            <!-- Lado Direito: Pergunta e Opções (Ocupa largura total em mobile, 2/3 em desktop) -->
+                            <div class="md:w-2/3">
+                                <p class="text-lg font-semibold text-gray-800 mb-4 question-text">${
+                                  q.question
+                                }</p>
+                                <div id="options-${q.id}" class="space-y-3">
+                                    ${Object.keys(q.options)
+                                      .map(
+                                        (key) => `
+                                        <button
+                                            class="option-button w-full text-left p-3 rounded-lg bg-primary-blue text-white shadow-md"
+                                            value="${key}"
+                                            onclick="checkAnswer(${q.id}, '${key}')"
+                                        >
+                                            <span class="font-bold mr-2">${key})</span> ${q.options[key]}
+                                        </button>
+                                    `
+                                      )
+                                      .join("")}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+          quizContainer.innerHTML += questionHtml;
+        });
+        updateScore(); // Inicializa o placar
+      }
+
+      // Inicia a renderização ao carregar a página
+      window.onload = renderQuestions;
+    </script>
+  </body>
+</html>
